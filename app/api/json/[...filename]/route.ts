@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -7,11 +7,11 @@ const supabase = createClient(
 );
 
 export async function GET(
-  request: Request,
-  { params }: { params: { filename: string[] } }  // Uwaga: to teraz tablica!
+  req: NextRequest,
+  context: { params: Promise<{ filename: string[] }> }
 ) {
-  // Połącz fragmenty ścieżki
-  const filePath = params.filename.join('/');
+  const { filename } = await context.params;
+  const filePath = filename.join('/');
 
   const { data, error } = await supabase
     .storage
@@ -26,7 +26,7 @@ export async function GET(
     const text = await data.text();
     const json = JSON.parse(text);
     return NextResponse.json(json);
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'Invalid JSON format' }, { status: 500 });
   }
 }
