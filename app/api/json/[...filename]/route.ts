@@ -6,17 +6,17 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-console.log("ok7");
 export async function GET(
   request: Request,
-  { params }: { params: { filename: string } }
+  { params }: { params: { filename: string[] } }  // Uwaga: to teraz tablica!
 ) {
-  const { filename } = params;
+  // Połącz fragmenty ścieżki
+  const filePath = params.filename.join('/');
 
   const { data, error } = await supabase
     .storage
     .from(process.env.SUPABASE_BUCKET!)
-    .download(filename);
+    .download(filePath);
 
   if (error || !data) {
     return NextResponse.json({ error: 'File not found' }, { status: 404 });
