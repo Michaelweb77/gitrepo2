@@ -6,7 +6,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-console.log("ok222");
+console.log("ok7");
 export async function GET(
   request: Request,
   { params }: { params: { filename: string } }
