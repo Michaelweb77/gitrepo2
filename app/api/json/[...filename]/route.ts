@@ -33,36 +33,48 @@ const supabase = createClient(
 
 // BEZ BLOKADY CORS ALE POZNIJE ZMIEŃ NA KONKRETNĄ DOMENE 
 export async function GET(
-  req: Request,
-  context: { params: { filename: string[] } }
+  req: NextRequest,
+  context: { params: Promise<{ filename: string[] }> } // <- WAŻNE w Next 15!
 ) {
-  const filePath = context.params.filename.join('/');
+  const { filename } = await context.params;
+  const filePath = filename.join('/');
 
   const { data, error } = await supabase
     .storage
-    .from('your-bucket-name') // <- zamień na swoją nazwę bucketa
+    .from(process.env.SUPABASE_BUCKET!) // upewnij się, że masz ENV ustawione
     .download(filePath);
 
   if (error || !data) {
-    return new NextResponse(
-      JSON.stringify({ error: 'Nie znaleziono pliku JSON' }),
+    return NextResponse.json(
+      { error: 'File not found' },
       {
         status: 404,
         headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*', // <-- TO DODAJ
-        }
+          'Access-Control-Allow-Origin': '*', // ← albo konkretny domain
+        },
       }
     );
   }
 
-  const fileContent = await data.text();
+  try {
+    const text = await data.text();
+    const json = JSON.parse(text);
 
-  return new NextResponse(fileContent, {
-    status: 200,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*', // <-- TO DODAJ
-    }
-  });
+    return NextResponse.json(json, {
+      status: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*', // ← TO JEST KLUCZOWE
+      },
+    });
+  } catch {
+    return NextResponse.json(
+      { error: 'Invalid JSON format' },
+      {
+        status: 500,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+        },
+      }
+    );
+  }
 }
